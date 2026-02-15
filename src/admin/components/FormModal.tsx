@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,6 +20,7 @@ const FormModal = <T extends Record<string, unknown>>({ open, onOpenChange, titl
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>Lengkapi form lalu simpan.</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           {fields.map((f) => {
