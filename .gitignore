@@ -17,8 +17,7 @@ pnpm-debug.log*
 Thumbs.db
 
 # Env & secrets
-.env
-# keep template
+.env*
 !.env.example
 
 # Tests/coverage
