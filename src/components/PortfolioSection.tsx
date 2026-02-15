@@ -1,0 +1,123 @@
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { X } from "lucide-react";
+
+import weddingImg from "@/assets/portfolio-wedding.jpg";
+import eventImg from "@/assets/portfolio-event.jpg";
+import corporateImg from "@/assets/portfolio-corporate.jpg";
+import wisudaImg from "@/assets/portfolio-wisuda.jpg";
+import personalImg from "@/assets/portfolio-personal.jpg";
+import productImg from "@/assets/portfolio-product.jpg";
+
+const portfolioItems = [
+  { src: weddingImg, category: "Wedding", title: "Wedding Golden Hour" },
+  { src: eventImg, category: "Event", title: "Corporate Event Stage" },
+  { src: corporateImg, category: "Corporate", title: "Professional Portrait" },
+  { src: wisudaImg, category: "Personal", title: "Graduation Day" },
+  { src: personalImg, category: "Personal", title: "Creative Branding" },
+  { src: productImg, category: "Corporate", title: "Product Photography" },
+];
+
+const filters = ["Semua", "Wedding", "Event", "Corporate", "Personal"];
+
+const PortfolioSection = () => {
+  const [activeFilter, setActiveFilter] = useState("Semua");
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
+  const filtered =
+    activeFilter === "Semua"
+      ? portfolioItems
+      : portfolioItems.filter((p) => p.category === activeFilter);
+
+  return (
+    <section id="portfolio" className="py-24 bg-gradient-dark">
+      <div className="container mx-auto px-6">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="mb-12 text-center"
+        >
+          <p className="mb-2 text-sm tracking-[0.3em] text-primary">PORTOFOLIO</p>
+          <h2 className="text-3xl font-bold md:text-5xl">
+            Karya <span className="text-gradient-gold italic">Terbaik</span> Kami
+          </h2>
+        </motion.div>
+
+        {/* Filters */}
+        <div className="mb-10 flex flex-wrap justify-center gap-3">
+          {filters.map((f) => (
+            <button
+              key={f}
+              onClick={() => setActiveFilter(f)}
+              className={`px-5 py-2 text-sm tracking-wide transition-all ${
+                activeFilter === f
+                  ? "bg-primary text-primary-foreground"
+                  : "border border-border text-muted-foreground hover:border-primary hover:text-primary"
+              }`}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
+
+        {/* Grid */}
+        <motion.div layout className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <AnimatePresence mode="popLayout">
+            {filtered.map((item) => (
+              <motion.div
+                key={item.title}
+                layout
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.4 }}
+                className="group relative cursor-pointer overflow-hidden"
+                onClick={() => setSelectedImage(item.src)}
+              >
+                <img
+                  src={item.src}
+                  alt={item.title}
+                  className="aspect-square w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/70 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                  <p className="text-sm tracking-[0.2em] text-primary">{item.category}</p>
+                  <p className="font-display text-xl font-semibold">{item.title}</p>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </motion.div>
+      </div>
+
+      {/* Modal */}
+      <AnimatePresence>
+        {selectedImage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-background/90 p-6"
+            onClick={() => setSelectedImage(null)}
+          >
+            <button className="absolute right-6 top-6 text-foreground hover:text-primary">
+              <X size={32} />
+            </button>
+            <motion.img
+              initial={{ scale: 0.8 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.8 }}
+              src={selectedImage}
+              alt="Preview"
+              className="max-h-[85vh] max-w-full object-contain"
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </section>
+  );
+};
+
+export default PortfolioSection;
