@@ -1,0 +1,8 @@
+{
+  "files.associations": {
+    "bun.lock": "plaintext"
+  },
+  "files.exclude": {
+    "**/bun.lock": false
+  }
+}
