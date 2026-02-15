@@ -19,7 +19,7 @@ const CTASection = () => (
           Hubungi kami sekarang untuk konsultasi gratis dan dapatkan penawaran terbaik untuk kebutuhan visual Anda.
         </p>
         <a
-          href="https://wa.me/6281234567890?text=Halo,%20saya%20tertarik%20dengan%20jasa%20foto%20dan%20video%20Anda"
+          href="https://wa.me/6285646420488?text=Halo,%20saya%20tertarik%20dengan%20jasa%20foto%20dan%20video%20Anda"
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-3 bg-gradient-gold px-10 py-5 text-sm font-semibold tracking-widest text-primary-foreground transition-all hover:opacity-90"

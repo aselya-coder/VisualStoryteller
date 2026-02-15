@@ -32,7 +32,7 @@ const Footer = () => (
           <ul className="space-y-3 text-sm text-muted-foreground">
             <li className="flex items-center gap-3">
               <Phone size={16} className="text-primary" />
-              +62 812-3456-7890
+              +62 856-4642-0488
             </li>
             <li className="flex items-center gap-3">
               <Instagram size={16} className="text-primary" />
