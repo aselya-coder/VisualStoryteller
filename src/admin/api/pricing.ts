@@ -14,17 +14,24 @@ export const listPricing = async (): Promise<PricingRow[]> => {
   return data ?? [];
 };
 
-export const upsertPricing = async (row: Omit<PricingRow, "id"> & { id?: number }) => {
-  if (!supabase) return { data: null } as any;
-  const { data, error } = await supabase.from("pricing").upsert(row, { onConflict: "id" }).select();
+export const upsertPricing = async (
+  row: Partial<PricingRow> & { name: string; price: number; features: string[] },
+): Promise<PricingRow[]> => {
+  if (!supabase) return [];
+  const { id, ...rest } = row as PricingRow;
+  if (id == null) {
+    const { data, error } = await supabase.from("pricing").insert(rest).select();
+    if (error) throw error;
+    return data;
+  }
+  const { data, error } = await supabase.from("pricing").upsert({ id, ...rest }, { onConflict: "id" }).select();
   if (error) throw error;
-  return data;
+  return data ?? [];
 };
 
-export const deletePricing = async (id: number) => {
-  if (!supabase) return { data: null } as any;
+export const deletePricing = async (id: number): Promise<PricingRow[]> => {
+  if (!supabase) return [];
   const { data, error } = await supabase.from("pricing").delete().eq("id", id).select();
   if (error) throw error;
-  return data;
+  return data ?? [];
 };
-

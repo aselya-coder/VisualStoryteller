@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import AdminLayout from "@/admin/layout/AdminLayout";
 import DataTable, { type Column } from "@/admin/components/DataTable";
 import FormModal from "@/admin/components/FormModal";
@@ -24,17 +24,7 @@ const PricingPage = () => {
     queryKey: ["pricing"],
     queryFn: async () => listPricing(),
   });
-  useEffect(() => {
-    if (isSupabaseEnabled) {
-      setItems((remote || []) as Pricing[]);
-    } else {
-      setItems([
-        { id: 1, name: "Silver", price: 1500000, features: ["1 Fotografer", "3 Jam Sesi", "50 Foto Edit", "File Digital HD", "Delivery 5 Hari"] },
-        { id: 2, name: "Gold", price: 3500000, features: ["1 Foto + 1 Videografer", "5 Jam Sesi", "1 Video Highlight", "100 Foto Edit", "File Digital HD", "Delivery 7 Hari"] },
-        { id: 3, name: "Platinum", price: 7500000, features: ["Full Team", "8 Jam Sesi", "Cinematic Video", "Drone Coverage", "Unlimited Foto Edit", "File 4K", "Delivery 14 Hari"] },
-      ]);
-    }
-  }, [remote]);
+  
 
   const columns: Column<Pricing>[] = [
     { key: "name", label: "Nama" },
@@ -48,8 +38,47 @@ const PricingPage = () => {
     { name: "features", label: "Fitur", type: "array" as const },
   ];
 
+  const seedExamples = useCallback(async (markSeeded = false) => {
+    if (!isSupabaseEnabled) return;
+    const samples: Omit<Pricing, "id">[] = [
+      { name: "Silver", price: 1500000, features: ["1 Fotografer", "3 Jam Sesi", "50 Foto Edit", "File Digital HD", "Delivery 5 Hari"] },
+      { name: "Gold", price: 3500000, features: ["1 Foto + 1 Videografer", "5 Jam Sesi", "1 Video Highlight", "100 Foto Edit", "File Digital HD", "Delivery 7 Hari"] },
+      { name: "Platinum", price: 7500000, features: ["Full Team", "8 Jam Sesi", "Cinematic Video", "Drone Coverage", "Unlimited Foto Edit", "File 4K", "Delivery 14 Hari"] },
+    ];
+    try {
+      for (const s of samples) {
+        await upsertPricing(s);
+      }
+      await qc.invalidateQueries({ queryKey: ["pricing"], exact: true });
+      toast({ title: "Data contoh ditambahkan" });
+      if (markSeeded) localStorage.setItem("seeded_pricing", "true");
+    } catch (e: unknown) {
+      toast({ title: "Gagal menambahkan", description: e instanceof Error ? e.message : String(e) });
+    }
+  }, [qc, toast]);
+
+  useEffect(() => {
+    if (isSupabaseEnabled) {
+      const data = (remote || []) as Pricing[];
+      setItems(data);
+      if ((data?.length || 0) === 0 && !localStorage.getItem("seeded_pricing")) {
+        seedExamples(true);
+      }
+    } else {
+      setItems([
+        { id: 1, name: "Silver", price: 1500000, features: ["1 Fotografer", "3 Jam Sesi", "50 Foto Edit", "File Digital HD", "Delivery 5 Hari"] },
+        { id: 2, name: "Gold", price: 3500000, features: ["1 Foto + 1 Videografer", "5 Jam Sesi", "1 Video Highlight", "100 Foto Edit", "File Digital HD", "Delivery 7 Hari"] },
+        { id: 3, name: "Platinum", price: 7500000, features: ["Full Team", "8 Jam Sesi", "Cinematic Video", "Drone Coverage", "Unlimited Foto Edit", "File 4K", "Delivery 14 Hari"] },
+      ]);
+    }
+  }, [remote, seedExamples]);
+
   const onAdd = () => {
-    setEditing({ id: Date.now(), name: "", price: 0, features: [] });
+    if (isSupabaseEnabled) {
+      setEditing({ id: undefined as unknown as number, name: "", price: 0, features: [] });
+    } else {
+      setEditing({ id: Date.now(), name: "", price: 0, features: [] });
+    }
     setModalOpen(true);
   };
   const onEdit = (row: Pricing) => {
@@ -66,7 +95,7 @@ const PricingPage = () => {
       await qc.invalidateQueries({ queryKey: ["pricing"], exact: true });
       toast({ title: "Tersimpan" });
     },
-    onError: (e: any) => toast({ title: "Gagal menyimpan", description: String(e.message || e) }),
+    onError: (e: unknown) => toast({ title: "Gagal menyimpan", description: e instanceof Error ? e.message : String(e) }),
   });
   const save = () => {
     if (!editing) return;
@@ -88,7 +117,7 @@ const PricingPage = () => {
       await qc.invalidateQueries({ queryKey: ["pricing"], exact: true });
       toast({ title: "Terhapus" });
     },
-    onError: (e: any) => toast({ title: "Gagal menghapus", description: String(e.message || e) }),
+    onError: (e: unknown) => toast({ title: "Gagal menghapus", description: e instanceof Error ? e.message : String(e) }),
   });
   const confirmDelete = () => {
     if (!toDelete) return;
@@ -101,23 +130,6 @@ const PricingPage = () => {
     setConfirmOpen(false);
   };
 
-  const seedExamples = async () => {
-    if (!isSupabaseEnabled) return;
-    const samples: Omit<Pricing, "id">[] = [
-      { name: "Silver", price: 1500000, features: ["1 Fotografer", "3 Jam Sesi", "50 Foto Edit", "File Digital HD", "Delivery 5 Hari"] },
-      { name: "Gold", price: 3500000, features: ["1 Foto + 1 Videografer", "5 Jam Sesi", "1 Video Highlight", "100 Foto Edit", "File Digital HD", "Delivery 7 Hari"] },
-      { name: "Platinum", price: 7500000, features: ["Full Team", "8 Jam Sesi", "Cinematic Video", "Drone Coverage", "Unlimited Foto Edit", "File 4K", "Delivery 14 Hari"] },
-    ];
-    try {
-      for (const s of samples) {
-        await upsertPricing(s as any);
-      }
-      await qc.invalidateQueries({ queryKey: ["pricing"], exact: true });
-      toast({ title: "Data contoh ditambahkan" });
-    } catch (e: any) {
-      toast({ title: "Gagal menambahkan", description: String(e.message || e) });
-    }
-  };
 
   return (
     <AdminLayout title="Pricing">
@@ -126,7 +138,7 @@ const PricingPage = () => {
       {isSupabaseEnabled && !isLoading && items.length === 0 && (
         <div className="mt-3 flex items-center justify-between rounded border p-3 text-sm">
           <span>Belum ada data di Supabase. Tambahkan lewat tombol di atas atau isi contoh.</span>
-          <Button size="sm" onClick={seedExamples}>Isi data contoh</Button>
+          <Button size="sm" onClick={() => seedExamples()}>Isi data contoh</Button>
         </div>
       )}
       <FormModal open={modalOpen} onOpenChange={setModalOpen} title={editing && items.some((i) => i.id === editing.id) ? "Edit Pricing" : "Tambah Pricing"} fields={fields} value={editing} onChange={(v) => setEditing(v)} onSubmit={save} />

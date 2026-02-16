@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import AdminLayout from "@/admin/layout/AdminLayout";
 import DataTable, { type Column } from "@/admin/components/DataTable";
 import FormModal from "@/admin/components/FormModal";
@@ -24,9 +24,54 @@ const ServicesPage = () => {
     queryKey: ["services"],
     queryFn: async () => listServices(),
   });
+  
+
+  const columns: Column<Service>[] = [
+    { key: "name", label: "Nama" },
+    { key: "description", label: "Deskripsi" },
+    { key: "icon", label: "Icon" },
+  ];
+
+  const fields = [
+    { name: "name", label: "Nama", type: "text" as const },
+    { name: "description", label: "Deskripsi", type: "textarea" as const },
+    { name: "icon", label: "Icon", type: "text" as const },
+  ];
+
+  const seedExamples = useCallback(async (markSeeded = false) => {
+    if (!isSupabaseEnabled) return;
+    const samples: Omit<Service, "id">[] = [
+      { name: "Photography", description: "Wedding, Wisuda, Event, Produk, Company Profile", icon: "Camera" },
+      {
+        name: "Videography",
+        description: "Wedding Cinematic, Event Highlight, Company Profile Video, Konten Sosial Media, Reels & TikTok",
+        icon: "Video",
+      },
+      {
+        name: "Editing Service",
+        description: "Editing Video Mentah, Color Grading Cinematic, Retouching Foto, Short Video Ads, Motion Graphic",
+        icon: "Scissors",
+      },
+    ];
+    try {
+      for (const s of samples) {
+        await upsertService(s);
+      }
+      await qc.invalidateQueries({ queryKey: ["services"], exact: true });
+      toast({ title: "Data contoh ditambahkan" });
+      if (markSeeded) localStorage.setItem("seeded_services", "true");
+    } catch (e: unknown) {
+      toast({ title: "Gagal menambahkan", description: e instanceof Error ? e.message : String(e) });
+    }
+  }, [qc, toast]);
+
   useEffect(() => {
     if (isSupabaseEnabled) {
-      setItems((remote || []) as Service[]);
+      const data = (remote || []) as Service[];
+      setItems(data);
+      if ((data?.length || 0) === 0 && !localStorage.getItem("seeded_services")) {
+        seedExamples(true);
+      }
     } else {
       setItems([
         {
@@ -51,22 +96,14 @@ const ServicesPage = () => {
         },
       ]);
     }
-  }, [remote]);
-
-  const columns: Column<Service>[] = [
-    { key: "name", label: "Nama" },
-    { key: "description", label: "Deskripsi" },
-    { key: "icon", label: "Icon" },
-  ];
-
-  const fields = [
-    { name: "name", label: "Nama", type: "text" as const },
-    { name: "description", label: "Deskripsi", type: "textarea" as const },
-    { name: "icon", label: "Icon", type: "text" as const },
-  ];
+  }, [remote, seedExamples]);
 
   const onAdd = () => {
-    setEditing({ id: Date.now(), name: "", description: "", icon: "" });
+    if (isSupabaseEnabled) {
+      setEditing({ id: undefined as unknown as number, name: "", description: "", icon: "" });
+    } else {
+      setEditing({ id: Date.now(), name: "", description: "", icon: "" });
+    }
     setModalOpen(true);
   };
   const onEdit = (row: Service) => {
@@ -83,7 +120,7 @@ const ServicesPage = () => {
       await qc.invalidateQueries({ queryKey: ["services"], exact: true });
       toast({ title: "Tersimpan" });
     },
-    onError: (e: any) => toast({ title: "Gagal menyimpan", description: String(e.message || e) }),
+    onError: (e: unknown) => toast({ title: "Gagal menyimpan", description: e instanceof Error ? e.message : String(e) }),
   });
   const save = () => {
     if (!editing) return;
@@ -105,7 +142,7 @@ const ServicesPage = () => {
       await qc.invalidateQueries({ queryKey: ["services"], exact: true });
       toast({ title: "Terhapus" });
     },
-    onError: (e: any) => toast({ title: "Gagal menghapus", description: String(e.message || e) }),
+    onError: (e: unknown) => toast({ title: "Gagal menghapus", description: e instanceof Error ? e.message : String(e) }),
   });
   const confirmDelete = () => {
     if (!toDelete) return;
@@ -118,31 +155,6 @@ const ServicesPage = () => {
     setConfirmOpen(false);
   };
 
-  const seedExamples = async () => {
-    if (!isSupabaseEnabled) return;
-    const samples: Omit<Service, "id">[] = [
-      { name: "Photography", description: "Wedding, Wisuda, Event, Produk, Company Profile", icon: "Camera" },
-      {
-        name: "Videography",
-        description: "Wedding Cinematic, Event Highlight, Company Profile Video, Konten Sosial Media, Reels & TikTok",
-        icon: "Video",
-      },
-      {
-        name: "Editing Service",
-        description: "Editing Video Mentah, Color Grading Cinematic, Retouching Foto, Short Video Ads, Motion Graphic",
-        icon: "Scissors",
-      },
-    ];
-    try {
-      for (const s of samples) {
-        await upsertService(s as any);
-      }
-      await qc.invalidateQueries({ queryKey: ["services"], exact: true });
-      toast({ title: "Data contoh ditambahkan" });
-    } catch (e: any) {
-      toast({ title: "Gagal menambahkan", description: String(e.message || e) });
-    }
-  };
 
   return (
     <AdminLayout title="Services">
@@ -151,7 +163,7 @@ const ServicesPage = () => {
       {isSupabaseEnabled && !isLoading && items.length === 0 && (
         <div className="mt-3 flex items-center justify-between rounded border p-3 text-sm">
           <span>Belum ada data di Supabase. Tambahkan lewat tombol di atas atau isi contoh.</span>
-          <Button size="sm" onClick={seedExamples}>Isi data contoh</Button>
+          <Button size="sm" onClick={() => seedExamples()}>Isi data contoh</Button>
         </div>
       )}
       <FormModal

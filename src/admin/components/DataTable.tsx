@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 
 export type Column<T> = { key: keyof T; label: string; render?: (row: T) => React.ReactNode };
@@ -31,12 +32,19 @@ const DataTable = <T extends { id?: string | number }>({ data, columns, onAdd, o
       <div className="flex items-center gap-2">
         <Input placeholder="Cari" value={query} onChange={(e) => setQuery(e.target.value)} className="max-w-xs" />
         {filter && (
-          <select className="h-9 rounded border px-2" value={filterValue} onChange={(e) => setFilterValue(e.target.value)}>
-            <option>All</option>
-            {filter.options.map((opt) => (
-              <option key={opt}>{opt}</option>
-            ))}
-          </select>
+          <Select value={filterValue} onValueChange={(v) => setFilterValue(v)}>
+            <SelectTrigger className="h-9 w-40">
+              <SelectValue placeholder="All" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="All">All</SelectItem>
+              {filter.options.map((opt) => (
+                <SelectItem key={opt} value={opt}>
+                  {opt}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         )}
         <Button onClick={onAdd}>Tambah</Button>
       </div>
