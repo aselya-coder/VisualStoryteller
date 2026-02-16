@@ -1,5 +1,8 @@
 import { motion } from "framer-motion";
 import { Users, Aperture, Film, Clock, BadgeCheck } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { isSupabaseEnabled } from "@/lib/supabaseClient";
+import { listAbout, type AboutRow } from "@/admin/api/about";
 
 const features = [
   { icon: Users, title: "Tim Profesional", desc: "Berpengalaman di berbagai event & industri" },
@@ -9,7 +12,25 @@ const features = [
   { icon: BadgeCheck, title: "Harga Transparan", desc: "Tanpa biaya tersembunyi, sesuai budget Anda" },
 ];
 
-const AboutSection = () => (
+const AboutSection = () => {
+  const { data } = useQuery({
+    enabled: isSupabaseEnabled,
+    queryKey: ["about"],
+    queryFn: async () => listAbout(),
+  });
+
+  const about = (() => {
+    if (isSupabaseEnabled) {
+      const rows = (data || []) as AboutRow[];
+      const r = rows[0];
+      return r
+        ? { title: r.title, description: r.description }
+        : { title: "Kenapa Memilih Kami?", description: "Tim profesional, peralatan modern, editing cinematic, tepat waktu, dan harga transparan." };
+    }
+    return { title: "Kenapa Memilih Kami?", description: "Tim profesional, peralatan modern, editing cinematic, tepat waktu, dan harga transparan." };
+  })();
+
+  return (
   <section id="about" className="py-24 bg-gradient-dark">
     <div className="container mx-auto px-6">
       <motion.div
@@ -20,9 +41,8 @@ const AboutSection = () => (
         className="mb-16 text-center"
       >
         <p className="mb-2 text-sm tracking-[0.3em] text-primary">TENTANG KAMI</p>
-        <h2 className="text-3xl font-bold md:text-5xl">
-          Kenapa Memilih <span className="text-gradient-gold italic">Kami?</span>
-        </h2>
+        <h2 className="text-3xl font-bold md:text-5xl">{about.title}</h2>
+        <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">{about.description}</p>
       </motion.div>
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
@@ -45,6 +65,7 @@ const AboutSection = () => (
       </div>
     </div>
   </section>
-);
+  );
+};
 
 export default AboutSection;

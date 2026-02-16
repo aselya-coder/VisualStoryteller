@@ -1,6 +1,9 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { isSupabaseEnabled } from "@/lib/supabaseClient";
+import { listPortfolio, type PortfolioRow } from "@/admin/api/portfolio";
 
 import weddingImg from "@/assets/portfolio-wedding.jpg";
 import eventImg from "@/assets/portfolio-event.jpg";
@@ -18,16 +21,44 @@ const portfolioItems = [
   { src: productImg, category: "Corporate", title: "Product Photography" },
 ];
 
-const filters = ["Semua", "Wedding", "Event", "Corporate", "Personal"];
+const staticFilters = ["Semua", "Wedding", "Event", "Corporate", "Personal"];
+const CATEGORY_ORDER = ["Wedding", "Event", "Corporate", "Personal"] as const;
+const ORDER_INDEX: Record<string, number> = { Wedding: 0, Event: 1, Corporate: 2, Personal: 3 };
 
 const PortfolioSection = () => {
   const [activeFilter, setActiveFilter] = useState("Semua");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
-  const filtered =
-    activeFilter === "Semua"
-      ? portfolioItems
-      : portfolioItems.filter((p) => p.category === activeFilter);
+  const { data } = useQuery({
+    enabled: isSupabaseEnabled,
+    queryKey: ["portfolio"],
+    queryFn: async () => listPortfolio(),
+  });
+
+  const items = useMemo(() => {
+    if (isSupabaseEnabled) {
+      const rows = (data || []) as PortfolioRow[];
+      const mapped = rows.map((r) => ({ id: r.id, src: r.image, category: r.category, title: r.title }));
+      mapped.sort((a, b) => (a.id ?? 0) - (b.id ?? 0));
+      return mapped;
+    }
+    return portfolioItems;
+  }, [data]);
+
+  const filters = useMemo(() => {
+    const cats = Array.from(new Set(items.map((i) => i.category))).filter(Boolean);
+    const orderedCats = cats.sort((a, b) => {
+      const ai = ORDER_INDEX[a];
+      const bi = ORDER_INDEX[b];
+      if (ai != null && bi != null) return ai - bi;
+      if (ai != null) return -1;
+      if (bi != null) return 1;
+      return a.localeCompare(b);
+    });
+    return ["Semua", ...(isSupabaseEnabled ? orderedCats : staticFilters.slice(1))];
+  }, [items]);
+
+  const filtered = activeFilter === "Semua" ? items : items.filter((p) => p.category === activeFilter);
 
   return (
     <section id="portfolio" className="py-24 bg-gradient-dark">
@@ -63,11 +94,11 @@ const PortfolioSection = () => {
         </div>
 
         {/* Grid */}
-        <motion.div layout className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <motion.div layout className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <AnimatePresence mode="popLayout">
             {filtered.map((item) => (
               <motion.div
-                key={item.title}
+                key={(item as { id?: number }).id ?? `${item.title}|${item.src}|${item.category}`}
                 layout
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}

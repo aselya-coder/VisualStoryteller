@@ -1,16 +1,51 @@
 import { motion } from "framer-motion";
 import heroBg from "@/assets/hero-bg.jpg";
+import { useQuery } from "@tanstack/react-query";
+import { isSupabaseEnabled } from "@/lib/supabaseClient";
+import { listHero, type HeroRow } from "@/admin/api/hero";
 
 const HeroSection = () => {
   const scrollTo = (href: string) => {
     document.querySelector(href)?.scrollIntoView({ behavior: "smooth" });
   };
 
+  const { data } = useQuery({
+    enabled: isSupabaseEnabled,
+    queryKey: ["hero"],
+    queryFn: async () => listHero(),
+  });
+
+  const hero = (() => {
+    if (isSupabaseEnabled) {
+      const rows = (data || []) as HeroRow[];
+      const r = rows[0];
+      return r
+        ? {
+            title: r.title,
+            subtitle: r.subtitle,
+            background_image: r.background_image || heroBg,
+            cta_text: r.cta_text || "BOOKING SEKARANG",
+          }
+        : {
+            title: "Abadikan Momen, Ceritakan Kisahmu Dengan Visual Berkualitas",
+            subtitle: "Kami membantu Anda mengubah momen menjadi karya visual yang berkelas dan tak terlupakan.",
+            background_image: heroBg,
+            cta_text: "BOOKING SEKARANG",
+          };
+    }
+    return {
+      title: "Abadikan Momen, Ceritakan Kisahmu Dengan Visual Berkualitas",
+      subtitle: "Kami membantu Anda mengubah momen menjadi karya visual yang berkelas dan tak terlupakan.",
+      background_image: heroBg,
+      cta_text: "BOOKING SEKARANG",
+    };
+  })();
+
   return (
     <section id="hero" className="relative flex min-h-screen items-center justify-center overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0">
-        <img src={heroBg} alt="Cinematic camera setup" className="h-full w-full object-cover" />
+        <img src={hero.background_image} alt="Cinematic camera setup" className="h-full w-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/60 to-background" />
       </div>
 
@@ -31,9 +66,7 @@ const HeroSection = () => {
           transition={{ duration: 0.8, delay: 0.2 }}
           className="mx-auto mb-6 max-w-4xl text-4xl font-bold leading-tight tracking-tight md:text-6xl lg:text-7xl"
         >
-          Abadikan Momen,{" "}
-          <span className="text-gradient-gold italic">Ceritakan Kisahmu</span>{" "}
-          Dengan Visual Berkualitas
+          {hero.title}
         </motion.h1>
 
         <motion.p
@@ -42,7 +75,7 @@ const HeroSection = () => {
           transition={{ duration: 0.8, delay: 0.4 }}
           className="mx-auto mb-10 max-w-2xl text-lg text-muted-foreground"
         >
-          Kami membantu Anda mengubah momen menjadi karya visual yang berkelas dan tak terlupakan.
+          {hero.subtitle}
         </motion.p>
 
         <motion.div
@@ -55,7 +88,7 @@ const HeroSection = () => {
             onClick={() => scrollTo("#contact")}
             className="bg-gradient-gold px-8 py-4 text-sm font-semibold tracking-widest text-primary-foreground transition-all hover:opacity-90"
           >
-            BOOKING SEKARANG
+            {hero.cta_text}
           </button>
           <button
             onClick={() => scrollTo("#portfolio")}

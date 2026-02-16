@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, Star } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { isSupabaseEnabled } from "@/lib/supabaseClient";
+import { listTestimonials, type TestimonialRow } from "@/admin/api/testimonials";
 
 const testimonials = [
   {
@@ -28,10 +31,27 @@ const testimonials = [
 const TestimonialsSection = () => {
   const [current, setCurrent] = useState(0);
 
-  const next = () => setCurrent((c) => (c + 1) % testimonials.length);
-  const prev = () => setCurrent((c) => (c - 1 + testimonials.length) % testimonials.length);
+  const { data } = useQuery({
+    enabled: isSupabaseEnabled,
+    queryKey: ["testimonials"],
+    queryFn: async () => listTestimonials(),
+  });
 
-  const t = testimonials[current];
+  const items: { name: string; text: string; rating: number }[] = (() => {
+    const fallback = testimonials.map((t) => ({ name: t.name, text: t.text, rating: 5 }));
+    if (isSupabaseEnabled) {
+      const rows = (data || []) as TestimonialRow[];
+      if (rows.length > 0) {
+        return rows.map((r) => ({ name: r.client_name, text: r.message, rating: r.rating }));
+      }
+    }
+    return fallback;
+  })();
+
+  const next = () => setCurrent((c) => (c + 1) % items.length);
+  const prev = () => setCurrent((c) => (c - 1 + items.length) % items.length);
+
+  const t = items[current] ?? items[0];
 
   return (
     <section id="testimonials" className="py-24 bg-gradient-dark">
@@ -52,7 +72,7 @@ const TestimonialsSection = () => {
         <div className="mx-auto max-w-2xl text-center">
           <div className="mb-6 flex justify-center gap-1">
             {[...Array(5)].map((_, i) => (
-              <Star key={i} size={20} className="fill-primary text-primary" />
+              <Star key={i} size={20} className={(i < (t?.rating ?? 0) ? "fill-primary " : "") + "text-primary"} />
             ))}
           </div>
 
@@ -67,8 +87,7 @@ const TestimonialsSection = () => {
               <p className="mb-8 font-display text-xl italic leading-relaxed text-foreground/90 md:text-2xl">
                 "{t.text}"
               </p>
-              <p className="font-semibold text-foreground">{t.name}</p>
-              <p className="text-sm text-primary">{t.role}</p>
+              <p className="font-semibold text-foreground">{t?.name}</p>
             </motion.div>
           </AnimatePresence>
 

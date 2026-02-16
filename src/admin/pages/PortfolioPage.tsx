@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import AdminLayout from "@/admin/layout/AdminLayout";
 import DataTable, { type Column } from "@/admin/components/DataTable";
 import FormModal from "@/admin/components/FormModal";
@@ -9,6 +9,9 @@ import { isSupabaseEnabled } from "@/lib/supabaseClient";
 import { deletePortfolio, listPortfolio, upsertPortfolio } from "@/admin/api/portfolio";
 
 type Portfolio = { id: number; title: string; image: string; category: string; link: string };
+
+const CATEGORY_ORDER = ["Wedding", "Event", "Corporate", "Personal"] as const;
+const ORDER_INDEX: Record<string, number> = { Wedding: 0, Event: 1, Corporate: 2, Personal: 3 };
 
 const PortfolioPage = () => {
   const { toast } = useToast();
@@ -25,18 +28,49 @@ const PortfolioPage = () => {
     queryFn: async () => listPortfolio(),
   });
 
+  const categories = useMemo(() => {
+    const uniq = Array.from(new Set(items.map((i) => i.category))).filter(Boolean);
+    return uniq.sort((a, b) => {
+      const ai = ORDER_INDEX[a];
+      const bi = ORDER_INDEX[b];
+      if (ai != null && bi != null) return ai - bi;
+      if (ai != null) return -1;
+      if (bi != null) return 1;
+      return a.localeCompare(b);
+    });
+  }, [items]);
+
+  const sortedItems = useMemo(() => {
+    return items.slice().sort((a, b) => {
+      const ai = ORDER_INDEX[a.category];
+      const bi = ORDER_INDEX[b.category];
+      if (ai != null && bi != null) {
+        if (ai !== bi) return ai - bi;
+        return (a.id ?? 0) - (b.id ?? 0);
+      }
+      if (ai != null) return -1;
+      if (bi != null) return 1;
+      const catCmp = a.category.localeCompare(b.category);
+      if (catCmp !== 0) return catCmp;
+      return (a.id ?? 0) - (b.id ?? 0);
+    });
+  }, [items]);
+
   const columns: Column<Portfolio>[] = [
     { key: "title", label: "Judul" },
     { key: "category", label: "Kategori" },
     { key: "link", label: "Link" },
   ];
 
-  const fields = [
-    { name: "title", label: "Judul", type: "text" as const },
-    { name: "image", label: "Gambar", type: "image" as const },
-    { name: "category", label: "Kategori", type: "text" as const },
-    { name: "link", label: "Link", type: "text" as const },
-  ];
+  const fields = useMemo(() => {
+    const options = categories.length > 0 ? categories : Array.from(CATEGORY_ORDER);
+    return [
+      { name: "title", label: "Judul", type: "text" as const },
+      { name: "image", label: "Gambar", type: "image" as const },
+      { name: "category", label: "Kategori", type: "select" as const, options },
+      { name: "link", label: "Link", type: "text" as const },
+    ];
+  }, [categories]);
 
   const seedExamples = useCallback(async (markSeeded = false) => {
     if (!isSupabaseEnabled) return;
@@ -60,7 +94,7 @@ const PortfolioPage = () => {
     }
   }, [qc, toast]);
 
-  const categories = Array.from(new Set(items.map((i) => i.category))).filter(Boolean);
+  
 
   useEffect(() => {
     if (isSupabaseEnabled) {
@@ -141,7 +175,7 @@ const PortfolioPage = () => {
 
   return (
     <AdminLayout title="Portfolio">
-      <DataTable<Portfolio> data={items} columns={columns} onAdd={onAdd} onEdit={onEdit} onDelete={onDelete} filter={{ key: "category", options: categories }} />
+      <DataTable<Portfolio> data={sortedItems} columns={columns} onAdd={onAdd} onEdit={onEdit} onDelete={onDelete} filter={{ key: "category", options: categories }} />
       {isSupabaseEnabled && (
         <div className="mt-2">
           <button className="inline-flex items-center justify-center rounded-md border px-3 py-1 text-sm" onClick={() => seedExamples()}>Isi data contoh</button>

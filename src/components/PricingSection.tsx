@@ -1,5 +1,8 @@
 import { motion } from "framer-motion";
 import { Check, Star } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { isSupabaseEnabled } from "@/lib/supabaseClient";
+import { listPricing, type PricingRow } from "@/admin/api/pricing";
 
 const packages = [
   {
@@ -27,6 +30,20 @@ const PricingSection = () => {
     document.querySelector(href)?.scrollIntoView({ behavior: "smooth" });
   };
 
+  const { data } = useQuery({
+    enabled: isSupabaseEnabled,
+    queryKey: ["pricing"],
+    queryFn: async () => listPricing(),
+  });
+
+  const items = (() => {
+    if (isSupabaseEnabled) {
+      const rows = (data || []) as PricingRow[];
+      return rows.map((r, i) => ({ name: r.name, price: r.price, features: r.features, popular: i === 1 }));
+    }
+    return packages.map((p, i) => ({ name: p.name, price: Number(p.price.replace(/\./g, "")), features: p.features, popular: p.popular }));
+  })();
+
   return (
     <section id="pricing" className="py-24">
       <div className="container mx-auto px-6">
@@ -44,7 +61,7 @@ const PricingSection = () => {
         </motion.div>
 
         <div className="grid gap-8 md:grid-cols-3">
-          {packages.map((pkg, i) => (
+          {items.map((pkg, i) => (
             <motion.div
               key={pkg.name}
               initial={{ opacity: 0, y: 30 }}
@@ -65,7 +82,7 @@ const PricingSection = () => {
               <div className="mb-6 text-center">
                 <p className="mb-1 text-sm tracking-[0.2em] text-primary">✨ {pkg.name}</p>
                 <p className="font-display text-4xl font-bold">
-                  <span className="text-lg text-muted-foreground">Rp</span> {pkg.price}
+                  <span className="text-lg text-muted-foreground">Rp</span> {new Intl.NumberFormat("id-ID").format(pkg.price)}
                 </p>
               </div>
               <ul className="mb-8 flex-1 space-y-3">

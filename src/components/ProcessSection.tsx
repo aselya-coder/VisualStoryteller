@@ -1,15 +1,33 @@
 import { motion } from "framer-motion";
-import { MessageSquare, Lightbulb, Camera, Film, Send } from "lucide-react";
+import { MessageSquare } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { isSupabaseEnabled } from "@/lib/supabaseClient";
+import { listProcess, type ProcessRow } from "@/admin/api/process";
 
-const steps = [
+const staticSteps = [
   { icon: MessageSquare, title: "Konsultasi", desc: "Diskusi kebutuhan & konsep visual Anda" },
-  { icon: Lightbulb, title: "Konsep & Brief", desc: "Menyusun konsep kreatif & timeline" },
-  { icon: Camera, title: "Shooting", desc: "Eksekusi sesi foto & video profesional" },
-  { icon: Film, title: "Editing", desc: "Post-production & color grading cinematic" },
-  { icon: Send, title: "Delivery", desc: "Pengiriman hasil final sesuai jadwal" },
+  { icon: MessageSquare, title: "Konsep & Brief", desc: "Menyusun konsep kreatif & timeline" },
+  { icon: MessageSquare, title: "Shooting", desc: "Eksekusi sesi foto & video profesional" },
+  { icon: MessageSquare, title: "Editing", desc: "Post-production & color grading cinematic" },
+  { icon: MessageSquare, title: "Delivery", desc: "Pengiriman hasil final sesuai jadwal" },
 ];
 
-const ProcessSection = () => (
+const ProcessSection = () => {
+  const { data } = useQuery({
+    enabled: isSupabaseEnabled,
+    queryKey: ["process"],
+    queryFn: async () => listProcess(),
+  });
+
+  const steps = (() => {
+    if (isSupabaseEnabled) {
+      const rows = (data || []) as ProcessRow[];
+      return rows.map((r) => ({ icon: MessageSquare, title: r.title, desc: r.description }));
+    }
+    return staticSteps;
+  })();
+
+  return (
   <section className="py-24">
     <div className="container mx-auto px-6">
       <motion.div
@@ -62,6 +80,7 @@ const ProcessSection = () => (
       </div>
     </div>
   </section>
-);
+  );
+};
 
 export default ProcessSection;

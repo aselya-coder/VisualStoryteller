@@ -1,5 +1,8 @@
 import { motion } from "framer-motion";
-import { Camera, Video, Scissors } from "lucide-react";
+import { Camera, Video, Scissors, type LucideProps } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { isSupabaseEnabled } from "@/lib/supabaseClient";
+import { listServices, type ServiceRow } from "@/admin/api/services";
 
 const services = [
   {
@@ -19,10 +22,30 @@ const services = [
   },
 ];
 
+const iconMap: Record<string, React.ComponentType<LucideProps>> = {
+  Camera,
+  Video,
+  Scissors,
+};
+
 const ServicesSection = () => {
   const scrollTo = (href: string) => {
     document.querySelector(href)?.scrollIntoView({ behavior: "smooth" });
   };
+
+  const { data } = useQuery({
+    enabled: isSupabaseEnabled,
+    queryKey: ["services"],
+    queryFn: async () => listServices(),
+  });
+
+  const items = (() => {
+    if (isSupabaseEnabled) {
+      const rows = (data || []) as ServiceRow[];
+      return rows.map((r) => ({ icon: iconMap[r.icon] ?? Camera, title: r.name, description: r.description }));
+    }
+    return services.map((s) => ({ icon: s.icon, title: s.title, description: s.items.join(", ") }));
+  })();
 
   return (
     <section id="services" className="py-24">
@@ -42,7 +65,7 @@ const ServicesSection = () => {
         </motion.div>
 
         <div className="grid gap-8 md:grid-cols-3">
-          {services.map((s, i) => (
+          {items.map((s, i) => (
             <motion.div
               key={s.title}
               initial={{ opacity: 0, y: 30 }}
@@ -55,14 +78,7 @@ const ServicesSection = () => {
                 <s.icon size={28} />
               </div>
               <h3 className="mb-4 font-display text-2xl font-semibold">{s.title}</h3>
-              <ul className="mb-6 space-y-2">
-                {s.items.map((item) => (
-                  <li key={item} className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <span className="h-1 w-1 rounded-full bg-primary" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
+              <p className="mb-6 text-sm text-muted-foreground">{s.description}</p>
               <button
                 onClick={() => scrollTo("#contact")}
                 className="text-sm tracking-wide text-primary transition-opacity hover:opacity-80"

@@ -6,11 +6,13 @@ import { Textarea } from "@/components/ui/textarea";
 import ImageUploadPreview from "@/admin/components/ImageUploadPreview";
 import ArrayInput from "@/admin/components/ArrayInput";
 import RatingInput from "@/admin/components/RatingInput";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type Field = {
   name: string;
   label: string;
-  type: "text" | "textarea" | "number" | "image" | "array" | "rating";
+  type: "text" | "textarea" | "number" | "image" | "array" | "rating" | "select";
+  options?: string[];
 };
 
 const FormModal = <T extends Record<string, unknown>>({ open, onOpenChange, title, fields, value, onChange, onSubmit }: { open: boolean; onOpenChange: (v: boolean) => void; title: string; fields: Field[]; value: T | null; onChange: (next: T) => void; onSubmit: () => void }) => {
@@ -58,6 +60,24 @@ const FormModal = <T extends Record<string, unknown>>({ open, onOpenChange, titl
                 <div key={f.name} className="space-y-2">
                   <label className="text-sm font-medium">{f.label}</label>
                   <RatingInput value={Number(v) || 0} onChange={(nv) => onChange({ ...(value as T), [f.name]: nv } as T)} />
+                </div>
+              );
+            if (f.type === "select")
+              return (
+                <div key={f.name} className="space-y-2">
+                  <label className="text-sm font-medium">{f.label}</label>
+                  <Select value={String(v)} onValueChange={(nv) => onChange({ ...(value as T), [f.name]: nv } as T)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(f.options || []).map((opt) => (
+                        <SelectItem key={opt} value={opt}>
+                          {opt}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               );
             return (

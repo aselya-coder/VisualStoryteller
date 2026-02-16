@@ -1,8 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
+import { isSupabaseEnabled } from "@/lib/supabaseClient";
+import { listNavbar, type NavbarRow } from "@/admin/api/navbar";
 
-const navItems = [
+const defaultNavItems = [
   { label: "Beranda", href: "#hero" },
   { label: "Tentang", href: "#about" },
   { label: "Layanan", href: "#services" },
@@ -11,6 +14,16 @@ const navItems = [
   { label: "Testimoni", href: "#testimonials" },
   { label: "Kontak", href: "#contact" },
 ];
+
+const hrefMap: Record<string, string> = {
+  Beranda: "#hero",
+  Tentang: "#about",
+  Layanan: "#services",
+  Portofolio: "#portfolio",
+  Harga: "#pricing",
+  Testimoni: "#testimonials",
+  Kontak: "#contact",
+};
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -21,6 +34,18 @@ const Navbar = () => {
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  const { data } = useQuery({ enabled: isSupabaseEnabled, queryKey: ["navbar"], queryFn: async () => listNavbar() });
+
+  const navItems = useMemo(() => {
+    if (isSupabaseEnabled) {
+      const rows = (data || []) as NavbarRow[];
+      const r = rows[0];
+      const menu = r?.menu || defaultNavItems.map((i) => i.label);
+      return menu.map((label) => ({ label, href: hrefMap[label] || "#" }));
+    }
+    return defaultNavItems;
+  }, [data]);
 
   const scrollTo = (href: string) => {
     setMobileOpen(false);

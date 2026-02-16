@@ -1,6 +1,21 @@
 import { Instagram, Phone, MapPin } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { isSupabaseEnabled } from "@/lib/supabaseClient";
+import { listFooter, type FooterRow } from "@/admin/api/footer";
 
-const Footer = () => (
+const Footer = () => {
+  const { data } = useQuery({ enabled: isSupabaseEnabled, queryKey: ["footer"], queryFn: async () => listFooter() });
+
+  const footer = (() => {
+    if (isSupabaseEnabled) {
+      const rows = (data || []) as FooterRow[];
+      const r = rows[0];
+      return r || { address: "Jl. Kreatif No. 10, Jakarta Selatan", email: "admin@visualstoryteller.app", phone: "+62 856-4642-0488", social_links: ["@visual.studio"] };
+    }
+    return { address: "Jl. Kreatif No. 10, Jakarta Selatan", email: "admin@visualstoryteller.app", phone: "+62 856-4642-0488", social_links: ["@visual.studio"] };
+  })();
+
+  return (
   <footer className="border-t border-border py-16">
     <div className="container mx-auto px-6">
       <div className="grid gap-12 md:grid-cols-3">
@@ -32,15 +47,15 @@ const Footer = () => (
           <ul className="space-y-3 text-sm text-muted-foreground">
             <li className="flex items-center gap-3">
               <Phone size={16} className="text-primary" />
-              +62 856-4642-0488
+              {footer.phone}
             </li>
             <li className="flex items-center gap-3">
               <Instagram size={16} className="text-primary" />
-              @visual.studio
+              {footer.social_links[0]}
             </li>
             <li className="flex items-start gap-3">
               <MapPin size={16} className="mt-0.5 text-primary" />
-              Jl. Kreatif No. 10, Jakarta Selatan
+              {footer.address}
             </li>
           </ul>
         </div>
@@ -51,6 +66,7 @@ const Footer = () => (
       </div>
     </div>
   </footer>
-);
+  );
+};
 
 export default Footer;
