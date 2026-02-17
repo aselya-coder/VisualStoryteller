@@ -103,7 +103,7 @@ const HeroSection = () => {
       <motion.div
         animate={{ y: [0, 10, 0] }}
         transition={{ repeat: Infinity, duration: 2 }}
-        className="absolute bottom-10 left-1/2 -translate-x-1/2"
+        className="absolute bottom-10 inset-x-0 flex flex-col items-center gap-2"
       >
         <div className="h-10 w-6 rounded-full border-2 border-primary/40 flex items-start justify-center p-1">
           <motion.div
@@ -112,6 +112,7 @@ const HeroSection = () => {
             className="h-2 w-1 rounded-full bg-primary"
           />
         </div>
+        <span className="text-xs tracking-[0.3em] text-muted-foreground text-center">GULIR KE BAWAH</span>
       </motion.div>
     </section>
   );
