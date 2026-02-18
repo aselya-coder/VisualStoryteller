@@ -38,6 +38,9 @@ const PortfolioSection = () => {
   const items = useMemo(() => {
     if (isSupabaseEnabled) {
       const rows = (data || []) as PortfolioRow[];
+      if (!rows || rows.length === 0) {
+        return portfolioItems;
+      }
       const mapped = rows.map((r) => ({ id: r.id, src: r.image, category: r.category, title: r.title }));
       mapped.sort((a, b) => (a.id ?? 0) - (b.id ?? 0));
       return mapped;
@@ -45,20 +48,28 @@ const PortfolioSection = () => {
     return portfolioItems;
   }, [data]);
 
-  const filters = useMemo(() => {
-    const cats = Array.from(new Set(items.map((i) => i.category))).filter(Boolean);
-    const orderedCats = cats.sort((a, b) => {
-      const ai = ORDER_INDEX[a];
-      const bi = ORDER_INDEX[b];
-      if (ai != null && bi != null) return ai - bi;
-      if (ai != null) return -1;
-      if (bi != null) return 1;
-      return a.localeCompare(b);
-    });
-    return ["Semua", ...(isSupabaseEnabled ? orderedCats : staticFilters.slice(1))];
-  }, [items]);
+  const filters = useMemo(() => staticFilters, []);
 
   const filtered = activeFilter === "Semua" ? items : items.filter((p) => p.category === activeFilter);
+
+  const ordered = useMemo(() => {
+    const base = filtered.slice();
+    const gi = base.findIndex((i) => i.title === "Graduation Day");
+    const pi = base.findIndex((i) => i.title === "Professional Portrait");
+    if (gi >= 0 && pi >= 0) {
+      const grad = base[gi];
+      const prof = base[pi];
+      const first = Math.min(gi, pi);
+      // remove both
+      base.splice(Math.max(gi, pi), 1);
+      base.splice(Math.min(gi, pi), 1);
+      // insert consecutively starting at the earlier index
+      base.splice(first, 0, grad.title === "Graduation Day" ? grad : prof);
+      base.splice(first + 1, 0, prof.title === "Professional Portrait" ? prof : grad);
+    }
+    return base;
+  }, [filtered]);
+
 
   return (
     <section id="portfolio" className="py-24 bg-gradient-dark">
@@ -96,7 +107,7 @@ const PortfolioSection = () => {
         {/* Grid */}
         <motion.div layout className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <AnimatePresence mode="popLayout">
-            {filtered.map((item) => (
+            {ordered.map((item) => (
               <motion.div
                 key={(item as { id?: number }).id ?? `${item.title}|${item.src}|${item.category}`}
                 layout
