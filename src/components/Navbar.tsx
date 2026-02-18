@@ -60,7 +60,10 @@ const Navbar = () => {
       }`}
     >
       <div className="container mx-auto flex items-center justify-between px-6 py-4">
-        <button onClick={() => scrollTo("#hero")} className="font-display text-xl tracking-wider text-foreground">
+        <button
+          onClick={() => scrollTo("#hero")}
+          className="font-display text-xl tracking-wider text-foreground border-0 outline-none focus:outline-none ring-0 focus:ring-0 bg-transparent rounded-none"
+        >
           <span className="text-gradient-gold">VISUAL</span> STUDIO
         </button>
 
